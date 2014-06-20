@@ -21,9 +21,10 @@ import json
 import time
 from twisted.python.hashlib import md5
 import urllib
+import urllib2
 
 
-YJK_API_HOST = 'http://api.yunjiekou.com/'
+YJK_API_HOST = 'api.yunjiekou.com'
 YJK_API_VERSION = '1.0'
 
 YJK_APP_KEY = 'YOUR APP KEY'
@@ -43,7 +44,7 @@ P_MSG = 'msg'
 P_SUB_MSG = 'sub_msg'
 
 
-N_REST = ''
+SUB_PATH = '/'
 
 def sign(secret, parameters):
     #===========================================================================
@@ -62,9 +63,9 @@ def sign(secret, parameters):
             str().join('%s%s' % (key, parameters[key]) for key in keys),
             secret)
         
+    
+        
     sign = md5(parameters).hexdigest().lower()
-    
-    
     
     return sign
 
@@ -143,7 +144,9 @@ class YunJieKou(object):
         #=======================================================================
         # 获取response结果
         #=======================================================================
-        connection = httplib.HTTPConnection(self.__domain, self.__port, timeout)
+        
+        print str(self.__domain)+str(self.__port)
+        connection = httplib.HTTPConnection("api.yunjiekou.com", self.__port, timeout=timeout)
         sys_parameters = {
             P_FORMAT: 'json',
             P_APPKEY: self.__app_key,
@@ -154,13 +157,18 @@ class YunJieKou(object):
         }
         sign_parameter = sys_parameters.copy()
         sys_parameters[P_SIGN] = sign(self.__secret, sign_parameter)
-        connection.connect()
+#         connection.connect()
         
         header = self.get_request_header();
-            
-        url = N_REST + "?" + urllib.urlencode(sys_parameters)
+
+        url =  SUB_PATH+"?"+urllib.urlencode(sys_parameters)
+        print str(url)
         connection.request(self.__httpmethod, url,  headers=header)
         response = connection.getresponse();
+        
+        print str(response.status)
+        
+        
         if response.status is not 200:
             raise RequestException('invalid http status ' + str(response.status) + ',detail body:' + response.read())
         result = response.read()
@@ -180,4 +188,3 @@ class YunJieKou(object):
             raise error
         return jsonobj
     
-
