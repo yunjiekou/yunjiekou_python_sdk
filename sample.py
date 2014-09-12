@@ -8,4 +8,5 @@ from yunjiekou import YunJieKou
 
 
 api = YunJieKou()
-api.getResponse("yundou.balance")
+result = api.getResponse("yundou/balance")
+print repr(result)

@@ -30,23 +30,23 @@ YJK_API_VERSION = '1.0'
 YJK_APP_KEY = 'YOUR APP KEY'
 YJK_APP_SECRET = 'YOUR APP SECRET'
 
-P_APPKEY = "appkey"
-P_API = "method"
-P_VERSION = "v"
-P_FORMAT = "format"
-P_TIMESTAMP = "timestamp"
-P_SIGN = "sign"
-P_SIGN_METHOD = "sign_method"
+YJK_APPKEY = "appkey"
+YJK_API = "method"
+YJK_VERSION = "v"
+YJK_FORMAT = "format"
+YJK_TIMESTAMP = "timestamp"
+YJK_SIGN = "sign"
+YJK_SIGN_METHOD = "sign_method"
 
-P_CODE = 'code'
-P_SUB_CODE = 'sub_code'
-P_MSG = 'msg'
-P_SUB_MSG = 'sub_msg'
+YJK_CODE = 'code'
+YJK_SUB_CODE = 'sub_code'
+YJK_MSG = 'msg'
+YJK_SUB_MSG = 'sub_msg'
 
+YJK_SUB_DIV = '/'
+YJK_SUB_MARK = '?'
 
-SUB_PATH = '/'
-
-def sign(secret, parameters):
+def sign(secret, parameters, api_name):
     #===========================================================================
     # '''签名方法
     # @param secret: 签名需要的密钥
@@ -59,11 +59,7 @@ def sign(secret, parameters):
         keys = parameters.keys()
         keys.sort()
         
-        parameters = "%s%s%s" % (secret,
-            str().join('%s%s' % (key, parameters[key]) for key in keys),
-            secret)
-        
-    
+        parameters = "%s%s%s%s" % (secret, str().join('%s%s' % (key, parameters[key]) for key in keys), api_name, secret)
         
     sign = md5(parameters).hexdigest().lower()
     
@@ -145,29 +141,25 @@ class YunJieKou(object):
         # 获取response结果
         #=======================================================================
         
-        print str(self.__domain)+str(self.__port)
-        connection = httplib.HTTPConnection("api.yunjiekou.com", self.__port, timeout=timeout)
+        connection = httplib.HTTPConnection(self.__domain, self.__port, timeout=timeout)
         sys_parameters = {
-            P_FORMAT: 'json',
-            P_APPKEY: self.__app_key,
-            P_SIGN_METHOD: "md5",
-            P_VERSION: YJK_API_VERSION,
-            P_TIMESTAMP: str(long(time.time() * 1000)),
-            P_API: api_name
+            YJK_FORMAT: 'json',
+            YJK_APPKEY: self.__app_key,
+            YJK_SIGN_METHOD: "md5",
+            YJK_VERSION: YJK_API_VERSION,
+            YJK_TIMESTAMP: str(int(time.time())),
+            YJK_API: api_name
         }
         sign_parameter = sys_parameters.copy()
-        sys_parameters[P_SIGN] = sign(self.__secret, sign_parameter)
-#         connection.connect()
+        sys_parameters[YJK_SIGN] = sign(self.__secret, sign_parameter, api_name)
+        connection.connect()
         
         header = self.get_request_header();
 
-        url =  SUB_PATH+"?"+urllib.urlencode(sys_parameters)
-        print str(url)
+        url =  YJK_SUB_DIV+api_name+YJK_SUB_MARK+urllib.urlencode(sys_parameters)
+
         connection.request(self.__httpmethod, url,  headers=header)
         response = connection.getresponse();
-        
-        print str(response.status)
-        
         
         if response.status is not 200:
             raise RequestException('invalid http status ' + str(response.status) + ',detail body:' + response.read())
@@ -175,14 +167,14 @@ class YunJieKou(object):
         jsonobj = json.loads(result)
         if jsonobj.has_key("error_response"):
             error = YunJieKouException()
-            if jsonobj["error_response"].has_key(P_CODE) :
-                error.errorcode = jsonobj["error_response"][P_CODE]
-            if jsonobj["error_response"].has_key(P_MSG) :
-                error.message = jsonobj["error_response"][P_MSG]
-            if jsonobj["error_response"].has_key(P_SUB_CODE) :
-                error.subcode = jsonobj["error_response"][P_SUB_CODE]
-            if jsonobj["error_response"].has_key(P_SUB_MSG) :
-                error.submsg = jsonobj["error_response"][P_SUB_MSG]
+            if jsonobj["error_response"].has_key(YJK_CODE) :
+                error.errorcode = jsonobj["error_response"][YJK_CODE]
+            if jsonobj["error_response"].has_key(YJK_MSG) :
+                error.message = jsonobj["error_response"][YJK_MSG]
+            if jsonobj["error_response"].has_key(YJK_SUB_CODE) :
+                error.subcode = jsonobj["error_response"][YJK_SUB_CODE]
+            if jsonobj["error_response"].has_key(YJK_SUB_MSG) :
+                error.submsg = jsonobj["error_response"][YJK_SUB_MSG]
             error.application_host = response.getheader("Application-Host", "")
             error.service_host = response.getheader("Location-Host", "")
             raise error
